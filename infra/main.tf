@@ -114,6 +114,13 @@ resource "google_cloud_scheduler_job" "cron_off" {
   name      = "keylightautomation-cron-off"
   schedule  = "0 18 * * *"
   time_zone = "America/Los_Angeles"
+  paused    = false
+
+  lifecycle {
+    ignore_changes = [
+      paused
+    ]
+  }
 
   http_target {
     http_method = "POST"
@@ -136,6 +143,13 @@ resource "google_cloud_scheduler_job" "cron_on" {
   name      = "keylightautomation-cron-on"
   schedule  = "0 8 * * *"
   time_zone = "America/Los_Angeles"
+  paused    = false
+
+  lifecycle {
+    ignore_changes = [
+      paused
+    ]
+  }
 
   http_target {
     http_method = "POST"
