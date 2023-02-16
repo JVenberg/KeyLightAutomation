@@ -1,0 +1,10 @@
+name: key-light-controller
+
+services:
+  controller:
+    image: gcr.io/keylightautomation-378015/keylightautomation
+    env_file:
+      - .env
+    build:
+      context: .
+      dockerfile: Dockerfile
