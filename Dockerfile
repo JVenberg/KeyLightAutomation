@@ -4,6 +4,6 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt
 
-CMD ["python", "controller.py"]
+ENTRYPOINT ["python", "controller.py"]
 
 COPY . .
