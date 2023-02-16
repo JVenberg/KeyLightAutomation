@@ -42,9 +42,10 @@ resource "google_project" "project" {
   billing_account = data.google_billing_account.account.id
 }
 
-resource "google_cloud_run_v2_job" "job" {
-  name     = "keylightautomation"
-  location = local.region
+resource "google_cloud_run_v2_job" "off" {
+  name         = "keylight-off"
+  location     = local.region
+  launch_stage = "BETA"
 
   template {
     template {
@@ -71,14 +72,74 @@ resource "google_cloud_run_v2_job" "job" {
   }
 }
 
-resource "google_cloud_scheduler_job" "cron" {
-  name      = "keylightautomation-cron"
+resource "google_cloud_run_v2_job" "on" {
+  name         = "keylight-on"
+  location     = local.region
+  launch_stage = "BETA"
+
+  template {
+    template {
+      containers {
+        image = data.google_container_registry_image.keylightautomation.image_url
+        env {
+          name  = "KLIGHT_IP"
+          value = "<PLACEHOLDER>"
+        }
+        env {
+          name  = "KLIGHT_PORT"
+          value = "<PLACEHOLDER>"
+        }
+
+        command = [
+          "python",
+          "controller.py",
+        ]
+        args = [
+          "--on"
+        ]
+      }
+    }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      client,
+      template[0].template[0].containers[0].env[1].value,
+      template[0].template[0].containers[0].env[0].value
+    ]
+  }
+}
+
+resource "google_cloud_scheduler_job" "cron_off" {
+  name      = "keylightautomation-cron-off"
   schedule  = "0 18 * * *"
   time_zone = "America/Los_Angeles"
 
   http_target {
     http_method = "POST"
-    uri         = "https://${google_cloud_run_v2_job.job.location}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${local.project_id}/jobs/${google_cloud_run_v2_job.job.name}:run"
+    uri         = "https://${google_cloud_run_v2_job.off.location}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${local.project_id}/jobs/${google_cloud_run_v2_job.off.name}:run"
+    oauth_token {
+      service_account_email = data.google_compute_default_service_account.default.email
+    }
+  }
+
+  retry_config {
+    min_backoff_duration = "5s"
+    max_retry_duration   = "0s"
+    max_doublings        = 5
+    retry_count          = 5
+  }
+}
+
+
+resource "google_cloud_scheduler_job" "cron_on" {
+  name      = "keylightautomation-cron-on"
+  schedule  = "0 8 * * *"
+  time_zone = "America/Los_Angeles"
+
+  http_target {
+    http_method = "POST"
+    uri         = "https://${google_cloud_run_v2_job.on.location}-run.googleapis.com/apis/run.googleapis.com/v1/namespaces/${local.project_id}/jobs/${google_cloud_run_v2_job.on.name}:run"
     oauth_token {
       service_account_email = data.google_compute_default_service_account.default.email
     }
