@@ -8,3 +8,5 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    volumes:
+      - ./controller.py:/app/controller.py
